@@ -1,7 +1,6 @@
 import sqlite3
 import streamlit as st
 import time
-import locale
 import pandas as pd
 
 
@@ -93,9 +92,7 @@ class Carteira:
         saldo = carteira.saldo()
 
         #formatar o valor para R$ e separador de milhar
-        
-        
-        saldo_formatado = saldo_formatado.replace(",00", "")
+        saldo_formatado = saldo
 
     # HTML para o conteúdo
         html_content = """
@@ -142,7 +139,7 @@ class Carteira:
         jogador = st.number_input("Jogador", key='jogador_recebedor', on_change=self.buscar_jogador(), value=0, step=1, format="%d")
         valor = st.number_input("Valor",value=0, step=1000, format="%i")
         #mostrar valor formatado com R$ e separador de milhar
-        valor_formatado = valor_formatado.replace(",00", "")
+        valor_formatado = valor
         st.write(valor_formatado)
 
 
@@ -168,8 +165,7 @@ class Carteira:
             valor_inicial_jogo = round(valor_inicial_jogo / denominator) * denominator
             valor_inicial_formatado = valor_inicial_jogo
             #formatar o valor para R$ e separador de milhar
-
-            valor_inicial_jogo = valor_inicial_jogo.replace(",00", "")
+            valor_inicial_jogo = valor_inicial_jogo
 
 
             receba_text = "Receber " + str(valor_inicial_jogo) + " 💰"
@@ -264,8 +260,6 @@ class Carteira:
         #renomear as colunas
         df.columns = ['Pagante', 'Recebedor', 'Valor', 'Tipo', 'Hora']
         df = df.sort_values(by=['Hora'], ascending=False)
-       
-        df['Valor'] = df['Valor'].apply(lambda x: x.replace(",00", ""))
         st.dataframe(df, hide_index=True)
         c.close()
 
