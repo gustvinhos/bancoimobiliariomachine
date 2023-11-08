@@ -91,6 +91,7 @@ class Carteira:
         carteira = Carteira()
         saldo = carteira.saldo()
 
+        saldo_formatado = ""
         #formatar o valor para R$ e separador de milhar
         saldo_formatado = saldo
 
