@@ -62,6 +62,7 @@ class Login_class:
                 else:
                     st.warning("Email ou senha incorretos")
                     return False
+        c.close()
 
     
     

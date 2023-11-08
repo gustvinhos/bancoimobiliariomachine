@@ -1,10 +1,13 @@
 import sqlite3
 import streamlit as st
 import time
+import locale
+import pandas as pd
 
 
 class Carteira:
     def __init__(self):
+        #pegar o valor inicial do jogo
         pass
 
     def saldo(self):
@@ -89,22 +92,18 @@ class Carteira:
         carteira = Carteira()
         saldo = carteira.saldo()
 
-        
-        #colocar pontuação de milhar
-        saldo = str(saldo)
-        saldo = saldo.split(".")
-        saldo = saldo[0]
-        saldo = saldo[::-1]
-        saldo = saldo.replace(".", ",")
-        saldo = saldo[::-1]
+        #formatar o valor para R$ e separador de milhar
+        locale.setlocale(locale.LC_ALL, 'pt_BR.utf8')
+        saldo_formatado = locale.currency(saldo, grouping=True, symbol=True)
+        saldo_formatado = saldo_formatado.replace(",00", "")
 
     # HTML para o conteúdo
         html_content = """
             <div class="saldo-container">
                 <h2 class="saldo-title">Saldo Atual:</h2>
-                <p class="saldo-amount">💰 R$ {}</p>
+                <p class="saldo-amount">💰 {}</p>
             </div>
-        """.format(saldo)
+        """.format(saldo_formatado)
 
         # CSS para o estilo
         css_style = """
@@ -140,8 +139,14 @@ class Carteira:
 
         st.header("Transações")
         
-        jogador = st.number_input("Jogador", key='jogador_recebedor', on_change=self.buscar_jogador(), value=None, step=1)
-        valor = st.number_input("Valor",value=None, step=500)
+        jogador = st.number_input("Jogador", key='jogador_recebedor', on_change=self.buscar_jogador(), value=0, step=1, format="%d")
+        valor = st.number_input("Valor",value=0, step=1000, format="%i")
+        #mostrar valor formatado com R$ e separador de milhar
+        locale.setlocale(locale.LC_ALL, 'pt_BR.utf8')
+        valor_formatado = locale.currency(valor, grouping=True, symbol=True)
+        valor_formatado = valor_formatado.replace(",00", "")
+        st.write(valor_formatado)
+
 
 
         col1, col2, col3, col4 = st.columns(4)
@@ -149,7 +154,29 @@ class Carteira:
             enviar = st.button("Enviar ⛔", use_container_width=True)
             
         with col2:
-            receba_2k = st.button("Receber 2K 💰", use_container_width=True)
+            #conectar no banco
+            conn = sqlite3.connect('database.db')
+            c = conn.cursor()
+            #buscar o valor inicial do jogo atual
+            c.execute("""select * from jogos where id = ?""", (st.session_state['jogo_id'],))
+            info = c.fetchall()
+            valor_inicial_jogo = info[0][5]
+            if valor_inicial_jogo > 1000000:
+                denominator = 100000
+            else:
+                denominator = 10000
+
+            valor_inicial_jogo = valor_inicial_jogo/10
+            valor_inicial_jogo = round(valor_inicial_jogo / denominator) * denominator
+            valor_inicial_formatado = valor_inicial_jogo
+            #formatar o valor para R$ e separador de milhar
+            locale.setlocale(locale.LC_ALL, 'pt_BR.utf8')
+            valor_inicial_jogo = locale.currency(valor_inicial_jogo, grouping=True, symbol=False)
+            valor_inicial_jogo = valor_inicial_jogo.replace(",00", "")
+
+
+            receba_text = "Receber " + str(valor_inicial_jogo) + " 💰"
+            receba_2k = st.button(receba_text, use_container_width=True)
         with col3:
             azar = st.button("Azar ⛔", use_container_width=True)
         with col4:
@@ -173,7 +200,7 @@ class Carteira:
             c.execute("""select * from jogadores_jogos where jogador_id = ? and jogo_id = ?""", (st.session_state['user'], st.session_state['jogo_id']))
             info = c.fetchall()
             saldo = info[0][3]
-            saldo += 2000
+            saldo += valor_inicial_formatado
             c.execute("""UPDATE jogadores_jogos SET saldo = ? WHERE jogador_id = ? and jogo_id = ?""", (saldo, st.session_state['user'], st.session_state['jogo_id']))
             #inserir no banco de dados a transação
             c.execute("""INSERT INTO transacoes (jogador_id_pagante, jogador_id_recebedor, jogo_id, valor, tipo, data, hora) VALUES (?,?,?,?,?,?,?)""", (st.session_state['user'], st.session_state['user'], st.session_state['jogo_id'], 2000, "recebimento", time.strftime("%d/%m/%Y"), time.strftime("%H:%M:%S")))
@@ -218,6 +245,32 @@ class Carteira:
             message.text("Transação concluída.")
             #atualizar o saldo do jogador na tela
             self.saldo()
+
+    def historico(self):
+        conn = sqlite3.connect('database.db')
+        c = conn.cursor()
+        c.execute("""select * from transacoes where jogador_id_pagante = ? or jogador_id_recebedor = ?""", (st.session_state['user'], st.session_state['user']))
+        info = c.fetchall()
+        #pegar o id dos jogadores tanto pagante quanto recebedor e substituir pelo nome
+        for i in range(len(info)):
+            c.execute("""select * from jogadores where id = ?""", (info[i][1],))
+            info_pagante = c.fetchall()
+            info[i] = list(info[i])
+            info[i][1] = info_pagante[0][1]
+            c.execute("""select * from jogadores where id = ?""", (info[i][2],))
+            info_recebedor = c.fetchall()
+            info[i][2] = info_recebedor[0][1]
+        #converter a lista de tuplas para dataframe
+        df = pd.DataFrame(info, columns=['id', 'jogador_id_pagante', 'jogador_id_recebedor', 'jogo_id', 'valor', 'tipo', 'data', 'hora'])
+        #pegar só algumas colunas do df
+        df = df[['jogador_id_pagante', 'jogador_id_recebedor', 'valor', 'tipo', 'hora']]
+        #renomear as colunas
+        df.columns = ['Pagante', 'Recebedor', 'Valor', 'Tipo', 'Hora']
+        df = df.sort_values(by=['Hora'], ascending=False)
+        df['Valor'] = df['Valor'].apply(lambda x: locale.currency(x, grouping=True, symbol=True))
+        df['Valor'] = df['Valor'].apply(lambda x: x.replace(",00", ""))
+        st.dataframe(df, hide_index=True)
+        c.close()
 
 
 

@@ -27,7 +27,7 @@ def tela_inicial():
 
 
     with st.sidebar:
-        choice = st.selectbox("Select", ["Carteira", "Transações", "Novo Jogo", "Finalizar Jogo"])
+        choice = st.selectbox("Select", ["Em jogo", "Transações", "Novo Jogo", "Finalizar Jogo"])
         #criar um botão para resetart todas as bases exceto a de jogadores
         if button := st.button("Resetar"):
             if button:
@@ -44,7 +44,7 @@ def tela_inicial():
             del st.session_state['user']
             st.rerun()
 
-    if choice == "Carteira":
+    if choice == "Em jogo":
         #buscar o nome do jogador
         c.execute("""select * from jogadores where id = ?""", (st.session_state['user'],))
         info = c.fetchall()
@@ -57,9 +57,19 @@ def tela_inicial():
             st.write("Você não está em nenhum jogo no momento")   
 
         elif status == "Em jogo":
-            carteira = Carteira()
-            saldo = carteira.ver_saldo()
-            transacoes = carteira.form_transacoes()
+            
+            submenu = st.sidebar.selectbox("Selecione:", ["Carteira", "Comprar Propriedade", "Comprar Casas", "Transações"])
+
+            if submenu == "Carteira":
+                carteira = Carteira()
+                saldo = carteira.ver_saldo()
+                transacoes = carteira.form_transacoes()
+
+                if st.button("Atualizar histórico"):
+                    carteira.historico()
+                
+
+
 
    
 
@@ -79,8 +89,6 @@ def tela_inicial():
 
 
 
-            
-
 
 
         
@@ -88,8 +96,9 @@ def tela_inicial():
 def main():
 
     if 'user' not in st.session_state:
-        with st.sidebar:
-            choice = st.selectbox("Select", ["Login", "Cadastro"])
+        
+        choice = st.selectbox("Selecione:", ["Login", "Cadastro"])
+        print(st.experimental_get_query_params())
 
         if choice == "Login":
             login = Login_class()
@@ -97,6 +106,8 @@ def main():
         elif choice == "Cadastro":
             login = Login_class()
             login.create_user()
+
+
 
     elif 'user' in st.session_state:
         tela_inicial()

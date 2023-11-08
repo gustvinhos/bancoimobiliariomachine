@@ -9,7 +9,8 @@ conn.execute("""CREATE TABLE IF NOT EXISTS jogos (
     date TEXT NOT NULL,
     vencedor_id TEXT,
     valor_monetario REAL ,
-    status TEXT
+    status TEXT,
+    valor_inicial INT
              )
     """
              
@@ -58,8 +59,19 @@ conn.execute("""CREATE TABLE IF NOT EXISTS transacoes (
     """
 )
 
+conn.execute("""CREATE TABLE IF NOT EXISTS propriedades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_propriedade TEXT NOT NULL,
+    modelo_jogo TEXT NOT NULL,
+    valor_compra REAL NOT NULL,
+    valor_aluguel REAL NOT NULL,
+    valor_casa REAL NOT NULL,
+    valor_hotel REAL NOT NULL, 
+    cor TEXT NOT NULL
+                          )
+    """
+)
 
-             
 
 
 

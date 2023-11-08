@@ -4,6 +4,7 @@ import time
 import pandas as pd
 
 
+
 class Jogos:
 
     def __init__(self):
@@ -31,7 +32,7 @@ class Jogos:
                 submitted = st.form_submit_button("Criar jogo")
                 
                 if submitted:
-                    c.execute("""INSERT INTO jogos (date) VALUES (?)""", (time.strftime("%d/%m/%Y"),))
+                    c.execute("""INSERT INTO jogos (date, valor_inicial ) VALUES (?, ?)""", (time.strftime("%d/%m/%Y"), valor_inicial))
                     conn.commit()
                     #buscar o id do último jogo criado
                     c.execute("""select * from jogos""")
@@ -52,6 +53,7 @@ class Jogos:
                             c.execute("""UPDATE jogadores SET status = ?, id_jogo_atual = ? WHERE id = ?""", ("Em jogo", id_jogo, jogador_id))
                             c.execute("""INSERT INTO jogadores_jogos (jogador_id, jogo_id, saldo, qtd_sortes, qtd_azar, qtd_transacoes) VALUES (?,?,?,?,?,?)""", (jogador_id, id_jogo, valor_inicial, 0, 0, 0))
                             st.session_state['jogo_id'] = id_jogo
+
                             conn.commit()
                     
 
